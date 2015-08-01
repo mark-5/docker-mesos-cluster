@@ -1,0 +1,60 @@
+---
+zookeeper:
+    image: jplock/zookeeper
+
+[%- FOREACH master IN masters %]
+[% master %]:
+    build: master
+    links: [zookeeper]
+    environment:
+        MESOS_LOG_DIR:  /var/log
+        MESOS_ZK:       zk://zookeeper:2181/mesos
+        MESOS_QUORUM:   1
+        MESOS_MASTER:   zk://zookeeper:2181/mesos
+        MESOS_WORK_DIR: /var/lib/mesos/work
+        MESOS_HOSTNAME: [% master %]
+    volumes:
+        - work:/work
+[% END -%]
+
+[%- FOREACH slave IN slaves %]
+[% slave %]:
+    build: slave
+    links:
+        - zookeeper
+        [%- FOREACH master IN masters %]
+        - [% master %]
+        [%- END %]
+    environment:
+        MESOS_LOG_DIR:  /var/log
+        MESOS_ZK:       zk://zookeeper:2181/mesos
+        MESOS_QUORUM:   1
+        MESOS_MASTER:   zk://zookeeper:2181/mesos
+        MESOS_WORK_DIR: /var/lib/mesos/work
+        MESOS_HOSTNAME: [% slave %]
+    volumes:
+        - work:/work
+[% END -%]
+
+proxy:
+    build: proxy
+    links:
+        - zookeeper
+        [%- FOREACH image IN masters.merge(slaves) %]
+        - [% image %]
+        [%- END %]
+    ports:   ['[% port %]:[% port %]']
+    command: proxy [% port %]
+
+work:
+    build: master
+    links:
+        - zookeeper
+        [%- FOREACH image IN masters.merge(slaves) %]
+        - [% image %]
+        [%- END %]
+    command: /bin/true
+    volumes:
+        - work:/work
+    working_dir: /work
+

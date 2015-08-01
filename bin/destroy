@@ -1,0 +1,10 @@
+#!/bin/bash
+CONFIG=$(dirname $0)/../docker-compose.yml
+if [ ! -e "$CONFIG" ]
+then
+    echo a mesos cluster has not yet been initialized with init
+    exit 1
+fi
+docker-compose stop
+docker-compose rm -fv
+rm $CONFIG

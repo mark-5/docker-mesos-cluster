@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use Getopt::Long::Descriptive;
+use IO::File;
+use FindBin qw($Bin);
+use Template;
+
+my ($opt, $usage) = describe_options(
+    "$0 %o",
+    ['masters|m=i', 'the number of mesos masters', {default => 1}],
+    ['port|p=i',   'the port to bind the web proxy to', {default => 8080}],
+    ['slaves|s=i', 'the number of mesos slaves', {default => 1}],
+    ['help|h',     'print usage message and exit'],
+);
+print($usage->text), exit if $opt->help;
+
+my @masters = map "master$_", 1 .. $opt->masters;
+my @slaves  = map "slave$_",  1 .. $opt->slaves;
+
+my $tt = Template->new({ABSOLUTE => 1});
+$tt->process(
+    "$Bin/../docker-compose.yml.tt",
+    {
+        masters => \@masters,
+        slaves  => \@slaves,
+        port    => $opt->port,
+    },
+    "$Bin/../docker-compose.yml",
+) or die $tt->error;
