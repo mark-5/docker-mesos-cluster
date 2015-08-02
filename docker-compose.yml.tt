@@ -43,8 +43,7 @@ proxy:
         [%- FOREACH image IN masters.merge(slaves) %]
         - [% image %]
         [%- END %]
-    ports:   ['[% port %]:[% port %]']
-    command: proxy [% port %]
+    ports:   ['[% port %]:8080']
 
 work:
     build: master
